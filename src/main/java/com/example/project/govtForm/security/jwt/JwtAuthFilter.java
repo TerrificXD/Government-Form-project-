@@ -6,7 +6,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,69 +17,72 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtProperties jwtProperties;
 
+    public JwtAuthFilter(
+            JwtUtils jwtUtils,
+            CustomUserDetailsService customUserDetailsService,
+            JwtProperties jwtProperties
+    ) {
+        this.jwtUtils = jwtUtils;
+        this.customUserDetailsService = customUserDetailsService;
+        this.jwtProperties = jwtProperties;
+    }
 
-    // Main filter method that executes for every HTTP request and This is where JWT validation and user authentication happens.
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
         try {
-            String header = jwtProperties.getJwtHeader();  // Get the JWT header
-            String authHeader = request.getHeader(header);  // Read the header value from the incoming request
-            String jwt = extractJwtFromHeader(authHeader);   // Extract the JWT token from header
+            String authHeader = request.getHeader(jwtProperties.getJwtHeader());
+            String jwt = extractJwtFromHeader(authHeader);
 
-            // If token exists AND user is not already authenticated
             if (jwt != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                String username = jwtUtils.extractUsername(jwt);  // Extract username from JWT payload
 
-                // If username is successfully extracted from token
+                String username = jwtUtils.extractUsername(jwt);
+
                 if (username != null) {
-                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);  // Load user from the database
 
-                    // Validate JWT token
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+
                     if (jwtUtils.isTokenValid(jwt, userDetails)) {
 
-                        // Create authentication object for Spring Security
-                        UsernamePasswordAuthenticationToken authToken =
+                        UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(
-                                        userDetails,  // The authenticated user
-                                        null,         // No password needed (already validated via JWT)
-                                        userDetails.getAuthorities() // Roles
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
                                 );
 
-                        // Attach request details
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                        //  Store the authentication in Spring Security's context
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
                     }
                 }
             }
         }
-        catch (Exception e) {
-            // Log any exception (token invalid, expired, signature wrong)
-            logger.error("Cannot set user authentication: {}", e);
+        catch (Exception ex) {
+            logger.error("JWT authentication failed", ex);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
 
-        // Continue to the next filter in chain
         filterChain.doFilter(request, response);
     }
 
-    // Helper method to extract JWT token from Authorization header.
     private String extractJwtFromHeader(String authHeader) {
-
-        // Check if header exists and starts with "Bearer "
         if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
-
-            // Return only the JWT token part and remove Bearer
             return authHeader.substring(7);
         }
-
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/auth") || path.startsWith("/swagger");
     }
 }

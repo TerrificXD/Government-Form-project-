@@ -3,11 +3,12 @@ package com.example.project.govtForm.service.impl;
 import com.example.project.govtForm.dto.JwtResponseDto;
 import com.example.project.govtForm.dto.LoginRequest;
 import com.example.project.govtForm.dto.SignupRequest;
-import com.example.project.govtForm.security.entity.SystemAdmin;
+import com.example.project.govtForm.security.entity.User;
+import com.example.project.govtForm.security.enums.Role;
 import com.example.project.govtForm.security.jwt.JwtUtils;
-import com.example.project.govtForm.security.repository.SystemAdminRepository;
+import com.example.project.govtForm.security.repository.UserRepository;
 import com.example.project.govtForm.service.IAuthService;
-import lombok.RequiredArgsConstructor;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,150 +18,151 @@ import org.springframework.security.authentication.password.CompromisedPasswordC
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-
 @Service
-@RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 
-    private final SystemAdminRepository systemAdminRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final CompromisedPasswordChecker compromisedPasswordChecker;
 
+    public AuthServiceImpl(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtUtils jwtUtils,
+            CompromisedPasswordChecker compromisedPasswordChecker
+    ) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+        this.compromisedPasswordChecker = compromisedPasswordChecker;
+    }
 
-    // REGISTER ADMIN
+    // SIGNUP
     @Override
     public ResponseEntity<?> signup(SignupRequest request) {
 
-        // Check if password and confirm password match
+        //Password confirmation
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("confirmPassword", "Password and Confirm Password do not match"));
         }
 
-        // Check if the password is strong or not
+        //Compromised password check
         var checkResult = compromisedPasswordChecker.check(request.getPassword());
         if (checkResult.isCompromised()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("password", "Please choose a stronger password."));
         }
 
-        // Create a map to store validation errors
+        //Uniqueness validation
         Map<String, String> errors = new HashMap<>();
 
-        // Check existing username
-        if (systemAdminRepository.existsByUsername(request.getUsername())) {
-            errors.put("username", "Username is already registered");
+        if (userRepository.existsByUsername(request.getUsername())) {
+            errors.put("username", "Username is already taken");
         }
 
-        // Check existing email
-        if (systemAdminRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             errors.put("email", "Email is already registered");
         }
 
-        // Check existing phone number
-        if (systemAdminRepository.existsByPhone(request.getPhone())) {
-            errors.put("phone", "Phone number is already registered");
-        }
-
-        // If any validation errors exist, return them together
         if (!errors.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
         }
 
-        // Create new SystemAdmin entity and hash the password
-        SystemAdmin admin = SystemAdmin.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .password(passwordEncoder.encode(request.getPassword()))  // Hash the password
-                .build();
+        //ROLE ASSIGNMENT LOGIC
+        Set<Role> roles;
 
-        // Save admin to database
-        systemAdminRepository.save(admin);
+        boolean isFirstUser = userRepository.count() == 0;
 
-        // Return response with success message
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of(
-                        "message", "System admin registered successfully",
-                        "username", admin.getUsername(),
-                        "email", admin.getEmail()
-                ));
+        if (isFirstUser) {
+            // First user becomes ADMIN + USER
+            roles = Set.of(Role.ROLE_ADMIN, Role.ROLE_USER);
+        } else {
+            // All others are normal users
+            roles = Set.of(Role.ROLE_USER);
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRoles(roles);
+
+
+        userRepository.save(user);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                Map.of(
+                        "message", isFirstUser
+                                ? "First user registered as ADMIN and USER"
+                                : "User registered successfully",
+                        "username", user.getUsername(),
+                        "email", user.getEmail(),
+                        "roles", user.getRoles()
+                )
+        );
     }
 
 
     // LOGIN
     @Override
-    public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<JwtResponseDto> login(LoginRequest request) {
+
         try {
-            // Authenticate username and password with AuthenticationManager and then authenticationManager will validate these credentials against the database
+            //Authenticate
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),  // User-entered username
-                            request.getPassword()   // User-entered password
+                            request.getUsername(),
+                            request.getPassword()
                     )
             );
 
-            // Extract authenticated user details
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-            // Extract roles from authorities (ROLE_ADMIN)
+            //Extract roles
             List<String> roles = authentication.getAuthorities()
                     .stream()
                     .map(GrantedAuthority::getAuthority)
                     .collect(Collectors.toList());
 
-            // Generate JWT token using user details
-            String token = jwtUtils.generateToken(userDetails);
+            //Generate JWT
+            String token = jwtUtils.generateToken(
+                    (org.springframework.security.core.userdetails.User) authentication.getPrincipal(),
+                    null // employeeId will be added later if needed
+            );
 
-            // Build the success JWT response DTO
-            JwtResponseDto response = JwtResponseDto.builder()
-                    .tokenType("Bearer")         // Token type convention
-                    .token(token)                // JWT Token
-                    .username(userDetails.getUsername())  // Authenticated username
-                    .roles(roles)                 // User's roles/permissions
-                    .build();
+            JwtResponseDto response = new JwtResponseDto();
+            response.setToken(token);
+            response.setTokenType("Bearer");
+            response.setUsername(authentication.getName());
+            response.setRoles(roles);
 
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return ResponseEntity.ok(response);
 
         } catch (BadCredentialsException e) {
-            // Thrown when username or password is incorrect
-            return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        } catch (AuthenticationException ex) {
-            // Any other authentication failure
-            return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication failed");
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception e) {
-            // Catch any unexpected errors
-            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-
-    // Helper method to build standardized error responses.
-    private ResponseEntity<JwtResponseDto> buildErrorResponse(HttpStatus status, String message) {
-
-        // Build an error DTO object with errorMessage
-        JwtResponseDto errorResponse = JwtResponseDto.builder()
-                .tokenType(null)        // No token on error
-                .token(null)            // No token on error
-                .username(null)         // No username on error
-                .roles(null)            // No roles on error
-                .errorMessage(message)  // Set the error message
-                .build();
-
-        // Return response with status
-        return new ResponseEntity<>(errorResponse, status);
+    @Transactional
+    public void promoteEmployeeToAdmin(Long employeeId) {
+        userRepository.promoteEmployeeUserToAdmin(employeeId);
     }
 }

@@ -2,15 +2,9 @@ package com.example.project.govtForm.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.*;
 
 import java.util.List;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 public class DepartmentDto {
 
     @NotBlank(message = "Department name is required")
@@ -18,8 +12,39 @@ public class DepartmentDto {
     private String name;
 
     @Size(max = 500, message = "Description cannot be longer than 500 characters")
-    private String description;        // what this department does
+    private String description;
 
-    private List<EmployeeDto> employees; // employees under this department
+    private List<EmployeeSummaryDto> employees;
 
+    public DepartmentDto() {}
+
+    public DepartmentDto(String name, String description, List<EmployeeSummaryDto> employees) {
+        this.name = name;
+        this.description = description;
+        this.employees = employees;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<EmployeeSummaryDto> getEmployees() {
+        return employees;
+    }
+
+    public void setEmployees(List<EmployeeSummaryDto> employees) {
+        this.employees = employees;
+    }
 }

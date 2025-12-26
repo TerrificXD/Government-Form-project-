@@ -1,11 +1,9 @@
 package com.example.project.govtForm.config;
 
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@Getter
 public class JwtProperties {
 
     @Value("${jwt.secret.key}")
@@ -19,4 +17,20 @@ public class JwtProperties {
 
     @Value("${jwt.expiration}")
     private long jwtExpirationMs;
+
+    public String getJwtSecretKey() {
+        return jwtSecretKey;
+    }
+
+    public String getJwtSecretDefault() {
+        return jwtSecretDefault;
+    }
+
+    public String getJwtHeader() {
+        return jwtHeader;
+    }
+
+    public long getJwtExpirationMs() {
+        return jwtExpirationMs;
+    }
 }
