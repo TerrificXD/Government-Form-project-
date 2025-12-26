@@ -19,99 +19,100 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
     // 1) HANDLE ResourceNotFoundException
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-        // Build a custom error response
-        ErrorResponseDto error = ErrorResponseDto.builder()
-                .timestamp(LocalDateTime.now()) // Time of error
-                .status(HttpStatus.NOT_FOUND.value()) // status code
-                .error(HttpStatus.NOT_FOUND.name())   // NOT_FOUND
-                .message(ex.getMessage()) // Message from thrown exception
-                .path(request.getRequestURI()) // API endpoint that triggered error
-                .build();
+    public ResponseEntity<ErrorResponseDto> handleResourceNotFound(ResourceNotFoundException ex,
+                                                                   HttpServletRequest request) {
 
-        // Return HTTP 404 with the error body
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setTimestamp(LocalDateTime.now());
+        error.setStatus(HttpStatus.NOT_FOUND.value());
+        error.setError(HttpStatus.NOT_FOUND.name());
+        error.setMessage(ex.getMessage());
+        error.setPath(request.getRequestURI());
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+
+    // 2) HANDLE Validation Errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        // Map to store field-specific errors
+    public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+                                                                         HttpServletRequest request) {
+
         Map<String, String> validationErrors = new HashMap<>();
 
-        // Loop through each validation error
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = error instanceof FieldError
-                    ? ((FieldError) error).getField() // If error belongs to a field
-                    : error.getObjectName(); // If not a field, then use object name
-            String message = error.getDefaultMessage(); // The validation message
-            validationErrors.put(fieldName, message); // Save it
+                    ? ((FieldError) error).getField()
+                    : error.getObjectName();
+
+            validationErrors.put(fieldName, error.getDefaultMessage());
         });
 
-        // Build error response with validation details
-        ErrorResponseDto apiError = ErrorResponseDto.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value()) // status code
-                .error(HttpStatus.BAD_REQUEST.name())   // BAD_REQUEST
-                .message("Validation failed")           // General validation error message
-                .path(request.getRequestURI())
-                .validationErrors(validationErrors)     // Add all validation issues
-                .build();
+        ErrorResponseDto apiError = new ErrorResponseDto();
+        apiError.setTimestamp(LocalDateTime.now());
+        apiError.setStatus(HttpStatus.BAD_REQUEST.value());
+        apiError.setError(HttpStatus.BAD_REQUEST.name());
+        apiError.setMessage("Validation failed");
+        apiError.setPath(request.getRequestURI());
+        apiError.setValidationErrors(validationErrors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
     }
+
 
     // 3) HANDLE BadCredentialsException
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
-        ErrorResponseDto error = ErrorResponseDto.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value()) // 401
-                .error(HttpStatus.UNAUTHORIZED.name())
-                .message("Invalid username or password") // Custom message
-                .path(request.getRequestURI())
-                .build();
+    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex,
+                                                                 HttpServletRequest request) {
+
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setTimestamp(LocalDateTime.now());
+        error.setStatus(HttpStatus.UNAUTHORIZED.value());
+        error.setError(HttpStatus.UNAUTHORIZED.name());
+        error.setMessage("Invalid username or password");
+        error.setPath(request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    // 4) HANDLE UsernameNotFoundException and Thrown when user email/username does not exist in DB
+
+    // 4) HANDLE UsernameNotFoundException
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleUsernameNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
-        ErrorResponseDto error = ErrorResponseDto.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value()) // 401
-                .error(HttpStatus.UNAUTHORIZED.name())
-                .message(ex.getMessage()) // Use the provided exception message
-                .path(request.getRequestURI())
-                .build();
+    public ResponseEntity<ErrorResponseDto> handleUsernameNotFound(UsernameNotFoundException ex,
+                                                                   HttpServletRequest request) {
+
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setTimestamp(LocalDateTime.now());
+        error.setStatus(HttpStatus.UNAUTHORIZED.value());
+        error.setError(HttpStatus.UNAUTHORIZED.name());
+        error.setMessage(ex.getMessage());
+        error.setPath(request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
+
+    // 5) HANDLE ConstraintViolationException (e.g., Path variables / Request params)
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponseDto> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleConstraintViolation(ConstraintViolationException ex,
+                                                                      HttpServletRequest request) {
+
         Map<String, String> validationErrors = new HashMap<>();
 
-        // Collect validation errors
-        ex.getConstraintViolations().forEach(violation -> {
-            String fieldName = violation.getPropertyPath().toString();
-            validationErrors.put(fieldName, violation.getMessage());
-        });
+        ex.getConstraintViolations().forEach(v ->
+                validationErrors.put(v.getPropertyPath().toString(), v.getMessage())
+        );
 
-        // Build the response
-        ErrorResponseDto apiError = ErrorResponseDto.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value()) // 400
-                .error(HttpStatus.BAD_REQUEST.name())
-                .message("Validation failed")
-                .path(request.getRequestURI())
-                .validationErrors(validationErrors)
-                .build();
+        ErrorResponseDto apiError = new ErrorResponseDto();
+        apiError.setTimestamp(LocalDateTime.now());
+        apiError.setStatus(HttpStatus.BAD_REQUEST.value());
+        apiError.setError(HttpStatus.BAD_REQUEST.name());
+        apiError.setMessage("Validation failed");
+        apiError.setPath(request.getRequestURI());
+        apiError.setValidationErrors(validationErrors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
     }
-
 }

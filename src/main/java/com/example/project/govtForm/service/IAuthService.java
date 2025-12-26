@@ -6,6 +6,9 @@ import com.example.project.govtForm.dto.SignupRequest;
 import org.springframework.http.ResponseEntity;
 
 public interface IAuthService {
+
     ResponseEntity<?> signup(SignupRequest request);
     ResponseEntity<JwtResponseDto> login(LoginRequest request);
+    void promoteEmployeeToAdmin(Long employeeId);
+
 }

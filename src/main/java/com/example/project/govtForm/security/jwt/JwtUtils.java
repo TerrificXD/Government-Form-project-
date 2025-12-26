@@ -1,62 +1,83 @@
 package com.example.project.govtForm.security.jwt;
 
 import com.example.project.govtForm.config.JwtProperties;
+import com.example.project.govtForm.security.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 public class JwtUtils {
 
     private final JwtProperties jwtProperties;
 
+    public JwtUtils(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+    }
 
-     // using hashing alogrithum for coveting secret string to SecretKey object for signing JWT
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtProperties.getJwtSecretDefault().getBytes());
     }
 
-    // Convert secret string to SecretKey object for signing JWT
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(UserDetails userDetails, Long employeeId) {
+
+        Map<String, Object> claims = new HashMap<>();
+
+        String role = userDetails.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("User has no role"));
+
+        claims.put("role", role);
+
+        if (Role.ROLE_USER.name().equals(role)) {
+            claims.put("employeeId", employeeId);
+        }
+
         return Jwts.builder()
-                .subject(userDetails.getUsername())  // Username is stored inside the "sub" (subject) claim
-                .issuedAt(new Date())  // When token is created (timestamp)
-                .expiration(new Date(System.currentTimeMillis() + jwtProperties.getJwtExpirationMs()))  // Token expiration time (24 hours)
-                .signWith(getSigningKey())  // Sign token with secret key (HMAC-SHA256)
-                .compact();  // Convert to compact JWT string
+                .claims(claims)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtProperties.getJwtExpirationMs()))
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
+                .compact();
     }
 
-    // Extract all claims from token (payload data)
     public Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSigningKey()) // Set the secret key to verify the token's signature
+                .verifyWith(getSigningKey())
                 .build()
-                .parseSignedClaims(token) // Parse the token and verify its signature
-                .getPayload(); // Get the payload (body) of the JWT which contains the claims
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    // Extract username
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    // Validate token (Username matches and Token is not expired)
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token); // Extract username from JWT token
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));  // Compare username + check expiration
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
     }
 
-    // Check if token is expired
-    private boolean isTokenExpired(String token) {
+    public Long extractEmployeeId(String token) {
+        return extractAllClaims(token).get("employeeId", Long.class);
+    }
 
-        // Compare expiration date with current date
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        return extractUsername(token).equals(userDetails.getUsername())
+                && !isTokenExpired(token);
+    }
+
+    private boolean isTokenExpired(String token) {
         return extractAllClaims(token)
                 .getExpiration()
                 .before(new Date());

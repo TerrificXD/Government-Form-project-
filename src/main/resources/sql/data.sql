@@ -1,59 +1,167 @@
--- data.sql — SAFE VERSION (NO TRUNCATE, NO DELETE)
-
--- SYSTEM ADMIN
-INSERT INTO system_admins (username, email, phone, password, created_by, created_at)
-VALUES ('admin','admin@example.com','9999999999',
-        '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
-        'system', CURRENT_TIMESTAMP)
-ON CONFLICT (email) DO NOTHING;
-
-
--- DEPARTMENTS
-INSERT INTO departments (name, description, created_by, created_at)
-VALUES
- ('IT Department','Handles software, servers, and networks.','system',CURRENT_TIMESTAMP),
- ('HR Department','Handles hiring, payroll, and employee relations.','system',CURRENT_TIMESTAMP)
-ON CONFLICT (name) DO NOTHING;
-
-
--- EMPLOYEES
-INSERT INTO employees (first_name, last_name, email, phone, position, join_date, department_id, created_by, created_at)
-SELECT 'Ravi','Sharma','ravi.sharma@example.com','9876543210','SENIOR','2018-02-10', d.id,'system',CURRENT_TIMESTAMP
-FROM departments d WHERE d.name='IT Department'
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO employees (first_name, last_name, email, phone, position, join_date, department_id, created_by, created_at)
-SELECT 'Aman','Kumar','aman.kumar@example.com','9988776655','INTERN','2024-11-20', d.id,'system',CURRENT_TIMESTAMP
-FROM departments d WHERE d.name='IT Department'
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO employees (first_name, last_name, email, phone, position, join_date, department_id, created_by, created_at)
-SELECT 'Neha','Verma','neha.verma@example.com','9123456780','MANAGER','2021-06-01', d.id,'system',CURRENT_TIMESTAMP
-FROM departments d WHERE d.name='HR Department'
-ON CONFLICT (email) DO NOTHING;
-
-
--- ADDRESSES
-INSERT INTO addresses (line1, city, state, pin_code, country, type, employee_id, created_by, created_at)
-SELECT 'House No. 10','Delhi','Delhi','110001','India','PERMANENT', e.id,'system',CURRENT_TIMESTAMP
-FROM employees e WHERE e.email='ravi.sharma@example.com'
-ON CONFLICT DO NOTHING;
-
-INSERT INTO addresses (line1, city, state, pin_code, country, type, employee_id, created_by, created_at)
-SELECT 'PG-202, Sector 62','Noida','UP','201301','India','CURRENT', e.id,'system',CURRENT_TIMESTAMP
-FROM employees e WHERE e.email='ravi.sharma@example.com'
-ON CONFLICT DO NOTHING;
-
-INSERT INTO addresses (line1, city, state, pin_code, country, type, employee_id, created_by, created_at)
-SELECT 'Room 12, Hostel A','Noida','UP','201301','India','PERMANENT', e.id,'system',CURRENT_TIMESTAMP
-FROM employees e WHERE e.email='aman.kumar@example.com'
-ON CONFLICT DO NOTHING;
-
-
-
-
-
-
+-- -- =========================
+-- -- USERS (AUTHENTICATION)
+-- -- =========================
+--
+-- -- ADMIN USER
+-- INSERT INTO users (username, email, password, created_by, created_at)
+-- VALUES (
+--            'admin',
+--            'admin@example.com',
+--            '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
+--            'system',
+--            CURRENT_TIMESTAMP
+--        )
+--     ON CONFLICT (email) DO NOTHING;
+--
+-- INSERT INTO users (username, email, password, created_by, created_at)
+-- VALUES (
+--            'terrific',
+--            'terrific@example.com',
+--            '$2y$10$mowOdE0E8gR.Vpe8XDayYOkQqdB9jfAzN18X9hTJ9U3IYaSobbyW6',
+--            'system',
+--            CURRENT_TIMESTAMP
+--        )
+--     ON CONFLICT (email) DO NOTHING;
+--
+-- -- ROLE FOR ADMIN
+-- INSERT INTO user_roles (user_id, role)
+-- SELECT u.id, 'ROLE_ADMIN'
+-- FROM users u
+-- WHERE u.username = 'admin'
+--     ON CONFLICT DO NOTHING;
+--
+--
+-- -- EMPLOYEE USER: Ravi
+-- INSERT INTO users (username, email, password, created_by, created_at)
+-- VALUES (
+--            'ravi',
+--            'ravi.sharma@example.com',
+--            '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
+--            'system',
+--            CURRENT_TIMESTAMP
+--        )
+--     ON CONFLICT (email) DO NOTHING;
+--
+-- INSERT INTO user_roles (user_id, role)
+-- SELECT u.id, 'ROLE_USER'
+-- FROM users u
+-- WHERE u.username = 'ravi'
+--     ON CONFLICT DO NOTHING;
+--
+--
+-- -- EMPLOYEE USER: Aman
+-- INSERT INTO users (username, email, password, created_by, created_at)
+-- VALUES (
+--            'aman',
+--            'aman.kumar@example.com',
+--            '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
+--            'system',
+--            CURRENT_TIMESTAMP
+--        )
+--     ON CONFLICT (email) DO NOTHING;
+--
+-- INSERT INTO user_roles (user_id, role)
+-- SELECT u.id, 'ROLE_USER'
+-- FROM users u
+-- WHERE u.username = 'aman'
+--     ON CONFLICT DO NOTHING;
+--
+--
+--
+-- -- =========================
+-- -- DEPARTMENTS
+-- -- =========================
+-- INSERT INTO departments (name, description, created_by, created_at)
+-- VALUES
+--     ('IT Department','Handles software, servers, and networks.','system',CURRENT_TIMESTAMP),
+--     ('HR Department','Handles hiring, payroll, and employee relations.','system',CURRENT_TIMESTAMP)
+--     ON CONFLICT (name) DO NOTHING;
+--
+--
+-- -- =========================
+-- -- EMPLOYEES
+-- -- =========================
+--
+-- -- Ravi (IT Department)
+-- INSERT INTO employees (
+--     first_name, last_name, email, phone, position, join_date,
+--     department_id, user_id, created_by, created_at
+-- )
+-- SELECT
+--     'Ravi','Sharma','ravi.sharma@example.com','9876543210','SENIOR','2018-02-10',
+--     d.id, u.id, 'system', CURRENT_TIMESTAMP
+-- FROM departments d, users u
+-- WHERE d.name = 'IT Department'
+--   AND u.username = 'ravi'
+--     ON CONFLICT (email) DO NOTHING;
+--
+--
+-- -- Aman (IT Department)
+-- INSERT INTO employees (
+--     first_name, last_name, email, phone, position, join_date,
+--     department_id, user_id, created_by, created_at
+-- )
+-- SELECT
+--     'Aman','Kumar','aman.kumar@example.com','9988776655','INTERN','2024-11-20',
+--     d.id, u.id, 'system', CURRENT_TIMESTAMP
+-- FROM departments d, users u
+-- WHERE d.name = 'IT Department'
+--   AND u.username = 'aman'
+--     ON CONFLICT (email) DO NOTHING;
+--
+--
+-- -- Neha (HR Manager – NO LOGIN USER)
+-- INSERT INTO employees (
+--     first_name, last_name, email, phone, position, join_date,
+--     department_id, created_by, created_at
+-- )
+-- SELECT
+--     'Neha','Verma','neha.verma@example.com','9123456780','MANAGER','2021-06-01',
+--     d.id, 'system', CURRENT_TIMESTAMP
+-- FROM departments d
+-- WHERE d.name = 'HR Department'
+--     ON CONFLICT (email) DO NOTHING;
+--
+--
+-- -- =========================
+-- -- ADDRESSES
+-- -- =========================
+--
+-- -- Ravi addresses
+-- INSERT INTO addresses (
+--     line1, city, state, pin_code, country, type,
+--     employee_id, created_by, created_at
+-- )
+-- SELECT
+--     'House No. 10','Delhi','Delhi','110001','India','PERMANENT',
+--     e.id,'system',CURRENT_TIMESTAMP
+-- FROM employees e
+-- WHERE e.email = 'ravi.sharma@example.com'
+--     ON CONFLICT DO NOTHING;
+--
+-- INSERT INTO addresses (
+--     line1, city, state, pin_code, country, type,
+--     employee_id, created_by, created_at
+-- )
+-- SELECT
+--     'PG-202, Sector 62','Noida','UP','201301','India','CURRENT',
+--     e.id,'system',CURRENT_TIMESTAMP
+-- FROM employees e
+-- WHERE e.email = 'ravi.sharma@example.com'
+--     ON CONFLICT DO NOTHING;
+--
+--
+-- -- Aman address
+-- INSERT INTO addresses (
+--     line1, city, state, pin_code, country, type,
+--     employee_id, created_by, created_at
+-- )
+-- SELECT
+--     'Room 12, Hostel A','Noida','UP','201301','India','PERMANENT',
+--     e.id,'system',CURRENT_TIMESTAMP
+-- FROM employees e
+-- WHERE e.email = 'aman.kumar@example.com'
+--     ON CONFLICT DO NOTHING;
 
 
 
@@ -65,61 +173,92 @@ ON CONFLICT DO NOTHING;
 
 
 --
---TRUNCATE TABLE addresses, employees, departments, system_admins
---RESTART IDENTITY CASCADE;
 --
----- system admin
---INSERT INTO system_admins (username, email, phone, password, created_by)
---VALUES (
---    'admin',
---    'admin@example.com',
---    '9999999999',
---    '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
---    'system'
---);
 --
----- departments
---INSERT INTO departments (name, description, created_by)
---VALUES
---('IT Department', 'Handles software, servers, and networks.', 'system'),
---('HR Department', 'Handles hiring, payroll, and employee relations.', 'system');
+-- TRUNCATE TABLE addresses, employees, user_roles, users, departments
+-- RESTART IDENTITY CASCADE;
 --
----- employees
---INSERT INTO employees (
---    first_name, last_name, email, phone,
---    position, join_date, department_id, created_by
---)
---VALUES
---(
---    'Ravi', 'Sharma', 'ravi.sharma@example.com',
---    '9876543210', 'SENIOR', '2018-02-10',
---    (SELECT id FROM departments WHERE name = 'IT Department'),
---    'system'
---),
---(
---    'Anita', 'Verma', 'anita.verma@example.com',
---    '9123456780', 'JUNIOR', '2021-07-01',
---    (SELECT id FROM departments WHERE name = 'HR Department'),
---    'system'
---);
+-- INSERT INTO users (username, email, password, created_by, created_at)
+-- VALUES (
+--            'terrific',
+--            'terrific@example.com',
+--            '$2a$10$8X6g8U8RrEoV4e5FZtYp6OQ3nQqY0h8vN2zjFfJt3lU9Dk0q6v6Wm',
+--            'system',
+--            CURRENT_TIMESTAMP
+--        )
+--     ON CONFLICT (email) DO NOTHING;
 --
----- addresses
---INSERT INTO addresses (
---    line1, city, state, pin_code, country, type, employee_id, created_by
---)
---VALUES
---(
---    '123 MG Road', 'Mumbai', 'Maharashtra',
---    '400001', 'India', 'PERMANENT',
---    (SELECT id FROM employees WHERE email = 'ravi.sharma@example.com'),
---    'system'
---),
---(
---    '45 Park Lane', 'Pune', 'Maharashtra',
---    '411001', 'India', 'CURRENT',
---    (SELECT id FROM employees WHERE email = 'anita.verma@example.com'),
---    'system'
---);
+--
+-- INSERT INTO user_roles (user_id, role)
+-- SELECT id, 'ROLE_ADMIN'
+-- FROM users
+-- WHERE username = 'admin';
+--
+-- INSERT INTO users (username, email, password, created_by)
+-- VALUES
+--     (
+--         'ravi',
+--         'ravi.sharma@example.com',
+--         '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
+--         'system'
+--     ),
+--     (
+--         'anita',
+--         'anita.verma@example.com',
+--         '$2a$10$wH6xRLV6jwSiY2VIBwsR1utU1T2WsTm1kQ/70ZRmTr8qRLVQDPtBW',
+--         'system'
+--     );
+--
+-- INSERT INTO user_roles (user_id, role)
+-- SELECT id, 'ROLE_USER'
+-- FROM users
+-- WHERE username IN ('ravi', 'anita');
+--
+-- INSERT INTO departments (name, description, created_by)
+-- VALUES
+--     ('IT Department', 'Handles software, servers, and networks.', 'system'),
+--     ('HR Department', 'Handles hiring, payroll, and employee relations.', 'system');
+--
+-- INSERT INTO employees (
+--     first_name, last_name, email, phone,
+--     position, join_date, department_id, user_id, created_by
+-- )
+-- VALUES
+--     (
+--         'Ravi', 'Sharma', 'ravi.sharma@example.com',
+--         '9876543210', 'SENIOR', '2018-02-10',
+--         (SELECT id FROM departments WHERE name = 'IT Department'),
+--         (SELECT id FROM users WHERE username = 'ravi'),
+--         'system'
+--     ),
+--     (
+--         'Anita', 'Verma', 'anita.verma@example.com',
+--         '9123456780', 'JUNIOR', '2021-07-01',
+--         (SELECT id FROM departments WHERE name = 'HR Department'),
+--         (SELECT id FROM users WHERE username = 'anita'),
+--         'system'
+--     );
+--
+-- INSERT INTO addresses (
+--     line1, city, state, pin_code, country,
+--     type, employee_id, created_by
+-- )
+-- VALUES
+--     (
+--         '123 MG Road', 'Mumbai', 'Maharashtra',
+--         '400001', 'India', 'PERMANENT',
+--         (SELECT id FROM employees WHERE email = 'ravi.sharma@example.com'),
+--         'system'
+--     ),
+--     (
+--         '45 Park Lane', 'Pune', 'Maharashtra',
+--         '411001', 'India', 'CURRENT',
+--         (SELECT id FROM employees WHERE email = 'anita.verma@example.com'),
+--         'system'
+--     );
+
+
+
 
 
 
