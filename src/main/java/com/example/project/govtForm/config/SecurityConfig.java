@@ -33,9 +33,7 @@ public class SecurityConfig {
 //                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())  // extracting the token
 //                )
 
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/auth/**", "/error").permitAll();
