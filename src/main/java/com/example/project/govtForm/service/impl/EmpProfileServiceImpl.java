@@ -12,6 +12,8 @@ import com.example.project.govtForm.repository.DepartmentRepository;
 import com.example.project.govtForm.repository.EmployeeRepository;
 import com.example.project.govtForm.security.enums.Role;
 import com.example.project.govtForm.service.IEmpProfileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import java.util.List;
 @Service
 public class EmpProfileServiceImpl implements IEmpProfileService {
 
+    private static final Logger logger = LoggerFactory.getLogger(EmpProfileServiceImpl.class);
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
 
@@ -35,8 +38,15 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
+        logger.info("Fetching profile for logged-in user '{}'", username);
+
         Employee employee = employeeRepository.findProfileByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee profile not found"));
+                .orElseThrow(() -> {
+                    logger.warn("Profile not found for user '{}'", username);
+                    return new ResourceNotFoundException("Employee profile not found");
+                });
+
+        logger.info("Profile fetched successfully for user '{}'", username);
 
         return mapToDto(employee);
     }
@@ -47,12 +57,18 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
+        logger.info("Creating profile for logged-in user '{}'", username);
+
         if (employeeRepository.findByUsername(username).isPresent()) {
+            logger.warn("Profile creation failed — profile already exists for user '{}'", username);
             throw new RuntimeException("Profile already exists");
         }
 
         Department department = departmentRepository.findById(employeeDto.getDepartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + employeeDto.getDepartmentId()));
+                .orElseThrow(() -> {
+                    logger.warn("Department not found with id {} during profile creation", employeeDto.getDepartmentId());
+                    return new ResourceNotFoundException("Department not found with id: " + employeeDto.getDepartmentId());
+                });
 
         Employee employee = mapToEntity(employeeDto);
         employee.setDepartment(department);
@@ -72,6 +88,7 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
         employee.setAddresses(addresses);
 
         Employee saved = employeeRepository.save(employee);
+        logger.info("Profile created successfully for user '{}'", username);
         return mapToDto(saved);
     }
 
@@ -82,8 +99,13 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
+        logger.info("Updating profile for logged-in user '{}'", username);
+
         Employee existing = employeeRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee profile not found"));
+                .orElseThrow(() -> {
+                    logger.warn("Profile not found for user '{}' during update", username);
+                    return new ResourceNotFoundException("Employee profile not found");
+                });
 
         existing.setFirstName(employeeDto.getFirstName());
         existing.setLastName(employeeDto.getLastName());
@@ -94,7 +116,10 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
 
         if (employeeDto.getDepartmentId() != null) {
             Department department = departmentRepository.findById(employeeDto.getDepartmentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + employeeDto.getDepartmentId()));
+                    .orElseThrow(() -> {
+                        logger.warn("Department not found with id {} during profile update", employeeDto.getDepartmentId());
+                        return new ResourceNotFoundException("Department not found with id: " + employeeDto.getDepartmentId());
+                    });
             existing.setDepartment(department);
         }
 
@@ -109,6 +134,7 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
         }
 
         Employee updated = employeeRepository.save(existing);
+        logger.info("Profile updated successfully for user '{}'", username);
         return mapToDto(updated);
     }
 

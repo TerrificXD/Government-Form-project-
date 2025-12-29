@@ -3,6 +3,8 @@ package com.example.project.govtForm.exception;
 import com.example.project.govtForm.dto.ErrorResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,9 +21,13 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1) HANDLE ResourceNotFoundException
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // HANDLE ResourceNotFoundException
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+
+        logger.warn("Resource not found at path {} - {}", request.getRequestURI(), ex.getMessage());
 
         ErrorResponseDto error = new ErrorResponseDto();
         error.setTimestamp(LocalDateTime.now());
@@ -34,9 +40,11 @@ public class GlobalExceptionHandler {
     }
 
 
-    // 2) HANDLE Validation Errors
+    // HANDLE Validation Errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpServletRequest request) {
+
+        logger.warn("Validation failed for request at path {}", request.getRequestURI());
 
         Map<String, String> validationErrors = new HashMap<>();
 
@@ -60,9 +68,11 @@ public class GlobalExceptionHandler {
     }
 
 
-    // 3) HANDLE BadCredentialsException
+    // HANDLE BadCredentialsException
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+
+        logger.warn("Bad credentials attempt at path {}", request.getRequestURI());
 
         ErrorResponseDto error = new ErrorResponseDto();
         error.setTimestamp(LocalDateTime.now());
@@ -75,9 +85,11 @@ public class GlobalExceptionHandler {
     }
 
 
-    // 4) HANDLE UsernameNotFoundException
+    // HANDLE UsernameNotFoundException
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleUsernameNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
+
+        logger.warn("Username not found at path {} - {}", request.getRequestURI(), ex.getMessage());
 
         ErrorResponseDto error = new ErrorResponseDto();
         error.setTimestamp(LocalDateTime.now());
@@ -90,9 +102,11 @@ public class GlobalExceptionHandler {
     }
 
 
-    // 5) HANDLE ConstraintViolationException (e.g., Path variables / Request params)
+    // HANDLE ConstraintViolationException (Path variables / Request params)
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponseDto> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+
+        logger.warn("Constraint violation at path {}", request.getRequestURI());
 
         Map<String, String> validationErrors = new HashMap<>();
 
@@ -110,4 +124,21 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
     }
+
+
+    // Catch all exception handler
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleGeneralException(Exception ex, HttpServletRequest request){
+        logger.warn("Unexpected error at path {}", request.getRequestURI());
+
+        ErrorResponseDto apiError = new ErrorResponseDto();
+        apiError.setTimestamp(LocalDateTime.now());
+        apiError.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        apiError.setError(HttpStatus.INTERNAL_SERVER_ERROR.name());
+        apiError.setMessage("An unexpected error occurred");
+        apiError.setPath(request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiError);
+    }
+
 }

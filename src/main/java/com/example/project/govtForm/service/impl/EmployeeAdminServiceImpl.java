@@ -10,6 +10,8 @@ import com.example.project.govtForm.exception.ResourceNotFoundException;
 import com.example.project.govtForm.repository.EmployeeRepository;
 import com.example.project.govtForm.service.IEmployeeAdminService;
 import com.example.project.govtForm.specification.EmployeeSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 @Service
 public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
 
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeAdminServiceImpl.class);
     private final EmployeeRepository employeeRepository;
 
     public EmployeeAdminServiceImpl(EmployeeRepository employeeRepository) {
@@ -31,20 +34,32 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     // DELETE EMPLOYEE
     @Override
     public void deleteEmployee(Long id) {
+        logger.warn("Admin request to delete employee with id {}", id);
 
         Employee existing = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+                .orElseThrow(() -> {
+                        logger.warn("Employee not found with id {} for delete", id);
+                        return new ResourceNotFoundException("Employee not found with id: " + id);
+                });
 
         employeeRepository.delete(existing);
+
+        logger.info("Employee deleted successfully with id {}", id);
     }
 
 
     // GET EMPLOYEE BY ID
     @Override
     public EmployeeAdminDto getEmployeeById(Long id) {
+        logger.info("Admin fetching employee details for id {}", id);
 
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+                .orElseThrow(() -> {
+                    logger.warn("Employee not found with id {}", id);
+                    return new ResourceNotFoundException("Employee not found with id: " + id);
+                });
+
+        logger.info("Employee details retrieved successfully for id {}", id);
 
         return mapToAdminDto(employee);
     }
@@ -53,16 +68,29 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     // GET ALL EMPLOYEES
     @Override
     public List<EmployeeAdminDto> getAllEmployees() {
+        logger.info("Admin fetching all employees");
 
-        return employeeRepository.findAll()
+        List<EmployeeAdminDto> employeelist = employeeRepository.findAll()
                 .stream()
                 .map(this::mapToAdminDto)
                 .collect(Collectors.toList());
+
+        logger.info("Successfully fetched {} employees", employeelist.size());
+
+        return employeelist;
     }
 
 
     @Override
     public Page<EmployeeAdminDto> searchEmployees(EmployeeFilterRequest filter) {
+        logger.info("Admin searching employees");
+
+        logger.debug(
+                "Search filter -> page={}, size={}, sortBy={}, sortDir={}, name={}, email={}, deptId={}, position={}, joinFrom={}",
+                filter.getPage(), filter.getSize(), filter.getSortBy(), filter.getSortDir(),
+                filter.getName(), filter.getEmail(), filter.getDepartmentId(),
+                filter.getPosition(), filter.getJoinDateFrom()
+        );
 
         Sort sort = filter.getSortDir().equalsIgnoreCase("DESC")
                 ? Sort.by(filter.getSortBy()).descending()
@@ -110,6 +138,8 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
         }
 
         Page<Employee> page = employeeRepository.findAll(spec, pageable);
+
+        logger.info("Employee search completed. Total results: {}", page.getTotalElements());
 
         return page.map(this::mapToAdminDto);
     }
