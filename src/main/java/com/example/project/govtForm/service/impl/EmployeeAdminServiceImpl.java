@@ -34,12 +34,13 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     // DELETE EMPLOYEE
     @Override
     public void deleteEmployee(Long id) {
+
         logger.warn("Admin request to delete employee with id {}", id);
 
         Employee existing = employeeRepository.findById(id)
                 .orElseThrow(() -> {
-                        logger.warn("Employee not found with id {} for delete", id);
-                        return new ResourceNotFoundException("Employee not found with id: " + id);
+                    logger.warn("Employee not found with id {} for delete", id);
+                    return new ResourceNotFoundException("Employee not found with id: " + id);
                 });
 
         employeeRepository.delete(existing);
@@ -51,6 +52,7 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     // GET EMPLOYEE BY ID
     @Override
     public EmployeeAdminDto getEmployeeById(Long id) {
+
         logger.info("Admin fetching employee details for id {}", id);
 
         Employee employee = employeeRepository.findById(id)
@@ -68,6 +70,7 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     // GET ALL EMPLOYEES
     @Override
     public List<EmployeeAdminDto> getAllEmployees() {
+
         logger.info("Admin fetching all employees");
 
         List<EmployeeAdminDto> employeelist = employeeRepository.findAll()
@@ -81,9 +84,19 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     }
 
 
+    // SEARCH EMPLOYEES
     @Override
     public Page<EmployeeAdminDto> searchEmployees(EmployeeFilterRequest filter) {
+
         logger.info("Admin searching employees");
+
+        if (filter.getPage() < 0 || filter.getSize() <= 0) {
+            throw new IllegalArgumentException("Invalid pagination values");
+        }
+
+        if (filter.getSortBy() == null) {
+            throw new IllegalArgumentException("Sort field cannot be null");
+        }
 
         logger.debug(
                 "Search filter -> page={}, size={}, sortBy={}, sortDir={}, name={}, email={}, deptId={}, position={}, joinFrom={}",
@@ -96,13 +109,12 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
                 ? Sort.by(filter.getSortBy()).descending()
                 : Sort.by(filter.getSortBy()).ascending();
 
-        Pageable pageable = PageRequest.of(
-                filter.getPage(),
-                filter.getSize(),
-                sort
-        );
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize(), sort);
 
         Specification<Employee> spec = (root, query, cb) -> cb.conjunction();
+
+
+        // ========== FILTERS ==========
 
         if (filter.getName() != null && !filter.getName().isBlank()) {
             spec = spec.and(EmployeeSpecification.findFirstName(filter.getName())
@@ -110,11 +122,9 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
         }
 
         if (filter.getEmail() != null && !filter.getEmail().isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(
-                                    cb.lower(root.get("email")),
-                                    "%" + filter.getEmail().toLowerCase() + "%"
-                            )
-            );
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("email")),
+                            "%" + filter.getEmail().toLowerCase() + "%"));
         }
 
         if (filter.getDepartmentId() != null) {
@@ -145,11 +155,12 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
     }
 
 
-    //Mapping Helpers
 
+    //MAPPING HELPERS
     private EmployeeAdminDto mapToAdminDto(Employee employee) {
 
         EmployeeAdminDto dto = new EmployeeAdminDto();
+
         BeanUtils.copyProperties(employee, dto, "department", "manager", "addresses");
 
         if (employee.getDepartment() != null) {
@@ -157,18 +168,17 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
         }
 
         if (employee.getManager() != null) {
-            dto.setManager(new ManagerDto
-                    (
-                            employee.getManager().getFirstName(),
-                            employee.getManager().getLastName(),
-                            employee.getManager().getEmail()
-                    )
-            );
+            dto.setManager(new ManagerDto(
+                    employee.getManager().getFirstName(),
+                    employee.getManager().getLastName(),
+                    employee.getManager().getEmail()
+            ));
         }
 
         if (employee.getAddresses() != null && !employee.getAddresses().isEmpty()) {
             dto.setAddresses(
-                    employee.getAddresses().stream()
+                    employee.getAddresses()
+                            .stream()
                             .map(this::mapToAddressDto)
                             .collect(Collectors.toList())
             );
@@ -177,7 +187,9 @@ public class EmployeeAdminServiceImpl implements IEmployeeAdminService {
         return dto;
     }
 
+
     private AddressDto mapToAddressDto(Address address) {
+
         AddressDto dto = new AddressDto();
         BeanUtils.copyProperties(address, dto);
         return dto;

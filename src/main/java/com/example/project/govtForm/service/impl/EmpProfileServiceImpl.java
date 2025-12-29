@@ -28,11 +28,14 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
 
-    public EmpProfileServiceImpl(EmployeeRepository employeeRepository, DepartmentRepository departmentRepository) {
+    public EmpProfileServiceImpl(EmployeeRepository employeeRepository,
+                                 DepartmentRepository departmentRepository) {
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
     }
 
+
+    // PROFILE DETAILS
     @Override
     public EmployeeDto employeeProfile() {
 
@@ -51,7 +54,8 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
         return mapToDto(employee);
     }
 
-    // CREATE
+
+    //CREATE PROFILE
     @Override
     public EmployeeDto createMyProfile(EmployeeDto employeeDto) {
 
@@ -61,20 +65,28 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
 
         if (employeeRepository.findByUsername(username).isPresent()) {
             logger.warn("Profile creation failed — profile already exists for user '{}'", username);
-            throw new RuntimeException("Profile already exists");
+            throw new IllegalArgumentException("Profile already exists");
+        }
+
+        if (employeeDto.getDepartmentId() == null) {
+            throw new IllegalArgumentException("Department id is required");
         }
 
         Department department = departmentRepository.findById(employeeDto.getDepartmentId())
                 .orElseThrow(() -> {
-                    logger.warn("Department not found with id {} during profile creation", employeeDto.getDepartmentId());
-                    return new ResourceNotFoundException("Department not found with id: " + employeeDto.getDepartmentId());
+                    logger.warn("Department not found with id {} during profile creation",
+                            employeeDto.getDepartmentId());
+                    return new ResourceNotFoundException(
+                            "Department not found with id: " + employeeDto.getDepartmentId());
                 });
 
         Employee employee = mapToEntity(employeeDto);
         employee.setDepartment(department);
-        employee.setUsername(username);       // from JWT
+        employee.setUsername(username);     // from JWT
         employee.setRole(Role.ROLE_USER);
 
+
+        // Addresses mapping
         List<Address> addresses = new ArrayList<>();
 
         if (employeeDto.getAddresses() != null) {
@@ -88,12 +100,14 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
         employee.setAddresses(addresses);
 
         Employee saved = employeeRepository.save(employee);
+
         logger.info("Profile created successfully for user '{}'", username);
+
         return mapToDto(saved);
     }
 
 
-    // UPDATE
+    //UPDATE PROFILE
     @Override
     public EmployeeDto updateMyProfile(EmployeeDto employeeDto) {
 
@@ -107,6 +121,8 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
                     return new ResourceNotFoundException("Employee profile not found");
                 });
 
+
+        // Update basic fields
         existing.setFirstName(employeeDto.getFirstName());
         existing.setLastName(employeeDto.getLastName());
         existing.setEmail(employeeDto.getEmail());
@@ -114,73 +130,98 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
         existing.setPosition(employeeDto.getPosition());
         existing.setJoinDate(employeeDto.getJoinDate());
 
+
+        // Update department if supplied
         if (employeeDto.getDepartmentId() != null) {
+
             Department department = departmentRepository.findById(employeeDto.getDepartmentId())
                     .orElseThrow(() -> {
-                        logger.warn("Department not found with id {} during profile update", employeeDto.getDepartmentId());
-                        return new ResourceNotFoundException("Department not found with id: " + employeeDto.getDepartmentId());
+                        logger.warn("Department not found with id {} during profile update",
+                                employeeDto.getDepartmentId());
+                        return new ResourceNotFoundException(
+                                "Department not found with id: " + employeeDto.getDepartmentId());
                     });
+
             existing.setDepartment(department);
         }
 
+
+        // Reset & update addresses
         existing.getAddresses().clear();
 
         if (employeeDto.getAddresses() != null) {
             for (AddressDto addressDto : employeeDto.getAddresses()) {
+
                 Address address = mapToAddressEntity(addressDto);
                 address.setEmployee(existing);
+
                 existing.getAddresses().add(address);
             }
         }
 
         Employee updated = employeeRepository.save(existing);
+
         logger.info("Profile updated successfully for user '{}'", username);
+
         return mapToDto(updated);
     }
 
 
-    //MAPPING HELPERS
+
+    // MAPPING HELPERS
 
     private Employee mapToEntity(EmployeeDto dto) {
-
         Employee employee = new Employee();
         BeanUtils.copyProperties(dto, employee, "username", "manager", "addresses");
         return employee;
     }
 
+
     private EmployeeDto mapToDto(Employee employee) {
 
         EmployeeDto dto = new EmployeeDto();
-        BeanUtils.copyProperties(employee, dto, "username", "password", "department", "manager", "addresses");
+
+        BeanUtils.copyProperties(employee, dto,
+                "username", "password", "department", "manager", "addresses");
+
 
         if (employee.getDepartment() != null) {
             dto.setDepartmentId(employee.getDepartment().getId());
         }
 
+
         if (employee.getAddresses() != null) {
-            List<AddressDto> addressDtos = employee.getAddresses()
-                    .stream()
-                    .map(this::mapToAddressDto)
-                    .toList();
-            dto.setAddresses(addressDtos);
+            dto.setAddresses(
+                    employee.getAddresses()
+                            .stream()
+                            .map(this::mapToAddressDto)
+                            .toList()
+            );
         }
 
+
         if (employee.getManager() != null) {
+
             ManagerDto managerDto = new ManagerDto();
+
             managerDto.setFirstName(employee.getManager().getFirstName());
             managerDto.setLastName(employee.getManager().getLastName());
             managerDto.setEmail(employee.getManager().getEmail());
+
             dto.setManager(managerDto);
         }
 
         return dto;
     }
 
+
     private AddressDto mapToAddressDto(Address address) {
+
         AddressDto dto = new AddressDto();
         BeanUtils.copyProperties(address, dto);
         return dto;
     }
+
 
     private Address mapToAddressEntity(AddressDto dto) {
 
@@ -190,6 +231,7 @@ public class EmpProfileServiceImpl implements IEmpProfileService {
         if (address.getType() == null) {
             address.setType(AddressType.CURRENT);
         }
+
         return address;
     }
 }
