@@ -1,0 +1,84 @@
+2025-12-29T13:07:06.069+05:30  INFO 11249 --- [Govt Form] [main] c.e.p.govtForm.GovtFormApplication       : Starting GovtFormApplication using Java 21.0.8 with PID 11249 (/home/sjain/code/SpringBoot/GovtForm/govtForm/target/classes started by sjain in /home/sjain/code/SpringBoot/GovtForm/govtForm)
+2025-12-29T13:07:06.073+05:30  INFO 11249 --- [Govt Form] [main] c.e.p.govtForm.GovtFormApplication       : No active profile set, falling back to 1 default profile: "default"
+2025-12-29T13:07:07.419+05:30  INFO 11249 --- [Govt Form] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-12-29T13:07:07.524+05:30  INFO 11249 --- [Govt Form] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 93 ms. Found 4 JPA repository interfaces.
+2025-12-29T13:07:08.450+05:30  INFO 11249 --- [Govt Form] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-12-29T13:07:08.472+05:30  INFO 11249 --- [Govt Form] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-29T13:07:08.473+05:30  INFO 11249 --- [Govt Form] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.49]
+2025-12-29T13:07:08.539+05:30  INFO 11249 --- [Govt Form] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-12-29T13:07:08.540+05:30  INFO 11249 --- [Govt Form] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2331 ms
+2025-12-29T13:07:08.791+05:30  INFO 11249 --- [Govt Form] [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-12-29T13:07:08.869+05:30  INFO 11249 --- [Govt Form] [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.36.Final
+2025-12-29T13:07:08.906+05:30  INFO 11249 --- [Govt Form] [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-12-29T13:07:09.256+05:30  INFO 11249 --- [Govt Form] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-12-29T13:07:09.293+05:30  INFO 11249 --- [Govt Form] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-29T13:07:09.759+05:30  INFO 11249 --- [Govt Form] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@f49e81a
+2025-12-29T13:07:09.761+05:30  INFO 11249 --- [Govt Form] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-29T13:07:09.801+05:30  WARN 11249 --- [Govt Form] [main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-12-29T13:07:09.826+05:30  INFO 11249 --- [Govt Form] [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 14.20
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-12-29T13:07:11.351+05:30  INFO 11249 --- [Govt Form] [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-12-29T13:07:11.500+05:30  INFO 11249 --- [Govt Form] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T13:07:11.890+05:30  INFO 11249 --- [Govt Form] [main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-12-29T13:07:12.181+05:30  INFO 11249 --- [Govt Form] [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2025-12-29T13:07:12.925+05:30  WARN 11249 --- [Govt Form] [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-29T13:07:13.783+05:30  INFO 11249 --- [Govt Form] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-12-29T13:07:13.797+05:30  INFO 11249 --- [Govt Form] [main] c.e.p.govtForm.GovtFormApplication       : Started GovtFormApplication in 8.827 seconds (process running for 9.796)
+2025-12-29T13:08:48.564+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-12-29T13:08:48.565+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-12-29T13:08:48.567+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2025-12-29T13:08:48.742+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-1] c.e.p.g.controller.AuthController        : Login attempt for username/email: rahul
+2025-12-29T13:08:48.979+05:30 DEBUG 11249 --- [Govt Form] [http-nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.email,
+        u1_0.employee_id,
+        u1_0.password,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+2025-12-29T13:08:49.026+05:30 DEBUG 11249 --- [Govt Form] [http-nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_0.role 
+    from
+        user_roles r1_0 
+    where
+        r1_0.user_id=?
+2025-12-29T13:08:49.769+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-1] c.e.p.g.service.impl.AuthServiceImpl     : Login successful for user: rahul with roles: [ROLE_USER]
+2025-12-29T13:08:49.771+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-1] c.e.p.g.controller.AuthController        : Login successful for username/email: rahul
+2025-12-29T13:10:30.331+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-4] c.e.p.g.controller.AuthController        : Login attempt for username/email: shobhit
+2025-12-29T13:10:30.334+05:30 DEBUG 11249 --- [Govt Form] [http-nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.email,
+        u1_0.employee_id,
+        u1_0.password,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+2025-12-29T13:10:30.338+05:30 DEBUG 11249 --- [Govt Form] [http-nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_0.role 
+    from
+        user_roles r1_0 
+    where
+        r1_0.user_id=?
+2025-12-29T13:10:30.543+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-4] c.e.p.g.service.impl.AuthServiceImpl     : Login successful for user: shobhit with roles: [ROLE_ADMIN, ROLE_USER]
+2025-12-29T13:10:30.544+05:30  INFO 11249 --- [Govt Form] [http-nio-8080-exec-4] c.e.p.g.controller.AuthController        : Login successful for username/email: shobhit
+2025-12-29T13:11:18.356+05:30  INFO 11249 --- [Govt Form] [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2025-12-29T13:11:18.360+05:30  INFO 11249 --- [Govt Form] [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2025-12-29T13:11:18.369+05:30  INFO 11249 --- [Govt Form] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T13:11:18.372+05:30  INFO 11249 --- [Govt Form] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-12-29T13:11:18.397+05:30  INFO 11249 --- [Govt Form] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
